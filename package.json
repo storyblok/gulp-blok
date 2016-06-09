@@ -1,0 +1,31 @@
+{
+  "name": "gulp-blok",
+  "version": "1.0.0",
+  "description": "Tool to publish blok templates and assets",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/storyblok/gulp-blok.git"
+  },
+  "keywords": [
+    "storyblok",
+    "storeblok",
+    "blok"
+  ],
+  "author": "Alexander Feiglstorfer",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/storyblok/gulp-blok/issues"
+  },
+  "homepage": "https://github.com/storyblok/gulp-blok#readme",
+  "dependencies": {
+    "isbinaryfile": "2.0.0",
+    "path": "0.11.14",
+    "through2": "0.6.3",
+    "gulp-util": "3.0.2",
+    "unirest": "^0.4.2"
+  }
+}
