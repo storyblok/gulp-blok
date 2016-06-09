@@ -5,12 +5,24 @@ var through = require('through2'),
   unirest = require('unirest'),
   PluginError = gutil.PluginError,
   blok = {},
-  blokApi,
+  config = {},
   PLUGIN_NAME = 'gulp-blok';
 
 // Set up blok API information
 blok._api = false;
 blok._basePath = false;
+
+blok._apiCall = function(method, props, callback) {
+  var req = unirest(method, 'http://' + config.options.url + '/api-v1/theme/' + config.options.themeId);
+
+  req.headers({
+    'x-api-key': config.options.apiKey
+  });
+
+  req.type('json');
+  req.send(props);
+  req.end(callback);
+}
 
 /*
  * Convert a file path on the local file system to an asset path in blok
@@ -78,6 +90,8 @@ blok._setOptions = function (options) {
   if (options.hasOwnProperty('basePath')) {
     blok._setBasePath(options.basePath);
   }
+
+  config.options = options;
 };
 
 /*
@@ -87,7 +101,7 @@ blok._setOptions = function (options) {
  * @param {string} filepath
  * @param {Function} done
  */
-blok.upload = function (filepath, done) {
+blok.upload = function (filepath, file, done) {
 
   var key = blok._makeAssetKey(filepath),
       isBinary = isBinaryFile(filepath),
@@ -96,7 +110,7 @@ blok.upload = function (filepath, done) {
       },
       contents;
 
-  contents = grunt.file.read(filepath, { encoding: isBinary ? null : 'utf8' });
+  contents = file.contents;
 
   if (isBinary) {
       props.attachment = contents.toString('base64');
@@ -104,7 +118,6 @@ blok.upload = function (filepath, done) {
       props.body = contents.toString();
 
       if (key.indexOf('.js') > -1 || key.indexOf('.css') > -1) {
-          blok.notify('Found js/css.');
           props.type = 'asset';
       }
   }
@@ -115,7 +128,6 @@ blok.upload = function (filepath, done) {
       } else if (!res.error) {
         gutil.log(gutil.colors.green('File "' + key + '" uploaded.'));
       }
-      done(res.error);
   }
   
   gutil.log(gutil.colors.green('[gulp-blok] - Starts upload of ' + key));
@@ -123,33 +135,27 @@ blok.upload = function (filepath, done) {
 };
 
 /*
- * @param {apiKey} string - blok developer api key
- * @param {password} string - blok developer api key password
- * @param {host} string - hostname provided from gulp file
- * @param {themeid} string - unique id upload to the blok theme
  * @param {options} object - named array of custom overrides.
  */
-function gulpBlokUpload(apiKey, password, host, themeid, options) {
+function gulpBlokUpload(options) {
 
   // queue files provided in the stream for deployment
   var apiBurstBucketSize = 40,
     uploadedFileCount = 0,
     stream;
 
-  // Set up the API
   blok._setOptions(options);
-  blokApi = blok._getApi(apiKey, password, host);
 
   gutil.log('Ready to upload to ' + gutil.colors.magenta(host));
 
-  if (typeof apiKey === 'undefined') {
+  if (!options.hasOwnProperty('apiKey')) {
     throw new PluginError(PLUGIN_NAME, 'Error, API Key for blok does not exist!');
   }
-  if (typeof password === 'undefined') {
-    throw new PluginError(PLUGIN_NAME, 'Error, password for blok does not exist!');
+  if (!options.hasOwnProperty('url')) {
+    throw new PluginError(PLUGIN_NAME, 'Error, url for blok does not exist!');
   }
-  if (typeof host === 'undefined') {
-    throw new PluginError(PLUGIN_NAME, 'Error, host for blok does not exist!');
+  if (!options.hasOwnProperty('themeId')) {
+    throw new PluginError(PLUGIN_NAME, 'Error, themeId for blok does not exist!');
   }
 
   // creating a stream through which each file will pass
@@ -162,11 +168,11 @@ function gulpBlokUpload(apiKey, password, host, themeid, options) {
     if (file.isBuffer()) {
       // deploy immediately if within the burst bucket size, otherwise queue
       if (uploadedFileCount <= apiBurstBucketSize) {
-        blok.upload(file.path, file, host, '', themeid);
+        blok.upload(file.path, file);
       } else {
         // Delay deployment based on position in the array to deploy 2 files per second
         // after hitting the initial burst bucket limit size
-        setTimeout(blok.upload.bind(null, file.path, file, host, '', themeid), ((uploadedFileCount - apiBurstBucketSize) / 2) * 1000);
+        setTimeout(blok.upload.bind(file.path, file), ((uploadedFileCount - apiBurstBucketSize) / 2) * 1000);
       }
       uploadedFileCount++;
     }
