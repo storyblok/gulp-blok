@@ -103,7 +103,7 @@ blok._setOptions = function (options) {
  */
 blok.upload = function (filepath, file, done) {
 
-  var key = blok._makeAssetKey(filepath),
+  var key = blok._makeAssetKey(filepath, 'dist'),
       isBinary = isBinaryFile(filepath),
       props = {
           filepath: key
@@ -117,7 +117,11 @@ blok.upload = function (filepath, file, done) {
   } else {
       props.body = contents.toString();
 
-      if (key.indexOf('.js') > -1 || key.indexOf('.css') > -1) {
+      var keyParts = key.split('.');
+      var lastPart = keyParts[keyParts.length - 1];
+
+      if (['js', 'css', 'svg'].indexOf(lastPart) > -1) {
+          gutil.log(gutil.colors.green('Found js/css/svg'));
           props.type = 'asset';
       }
   }
@@ -146,7 +150,7 @@ function gulpBlokUpload(options) {
 
   blok._setOptions(options);
 
-  gutil.log('Ready to upload to ' + gutil.colors.magenta(host));
+  gutil.log('Ready to upload');
 
   if (!options.hasOwnProperty('apiKey')) {
     throw new PluginError(PLUGIN_NAME, 'Error, API Key for blok does not exist!');
