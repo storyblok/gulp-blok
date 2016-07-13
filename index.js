@@ -6,7 +6,8 @@ var through = require('through2'),
   PluginError = gutil.PluginError,
   blok = {},
   config = {},
-  PLUGIN_NAME = 'gulp-blok';
+  PLUGIN_NAME = 'gulp-blok'
+  queue = [];
 
 // Set up blok API information
 blok._api = false;
@@ -102,6 +103,11 @@ blok._setOptions = function (options) {
  * @param {Function} done
  */
 blok.upload = function (filepath, file, done) {
+  if (queue.indexOf(filepath) > -1) {
+    return;
+  }
+
+  queue.push(filepath);
 
   var key = blok._makeAssetKey(filepath, 'dist'),
       isBinary = isBinaryFile(filepath),
@@ -127,10 +133,14 @@ blok.upload = function (filepath, file, done) {
   }
 
   function onUpdate(res) {
+      var index = queue.indexOf(filepath);
+      queue.splice(index, 1);
+
       if (res.error) {
         gutil.log(gutil.colors.red('Error uploading file ' + JSON.stringify(res.body)));
       } else if (!res.error) {
         gutil.log(gutil.colors.green('File "' + key + '" uploaded.'));
+        done();
       }
   }
   
@@ -144,9 +154,10 @@ blok.upload = function (filepath, file, done) {
 function gulpBlokUpload(options) {
 
   // queue files provided in the stream for deployment
-  var apiBurstBucketSize = 40,
-    uploadedFileCount = 0,
-    stream;
+  var apiBurstBucketSize = 40;
+  var uploadedFileCount = 0;
+  var stream;
+  var uploadDone = function() {};
 
   blok._setOptions(options);
 
@@ -161,6 +172,9 @@ function gulpBlokUpload(options) {
   if (!options.hasOwnProperty('themeId')) {
     throw new PluginError(PLUGIN_NAME, 'Error, themeId for blok does not exist!');
   }
+  if (options.hasOwnProperty('uploadDone')) {
+    uploadDone = options['uploadDone'];
+  }
 
   // creating a stream through which each file will pass
   stream = through.obj(function (file, enc, cb) {
@@ -172,11 +186,11 @@ function gulpBlokUpload(options) {
     if (file.isBuffer()) {
       // deploy immediately if within the burst bucket size, otherwise queue
       if (uploadedFileCount <= apiBurstBucketSize) {
-        blok.upload(file.path, file);
+        blok.upload(file.path, file, uploadDone);
       } else {
         // Delay deployment based on position in the array to deploy 2 files per second
         // after hitting the initial burst bucket limit size
-        setTimeout(blok.upload.bind(file.path, file), ((uploadedFileCount - apiBurstBucketSize) / 2) * 1000);
+        setTimeout(blok.upload.bind(file.path, file), ((uploadedFileCount - apiBurstBucketSize) / 2) * 1000, uploadDone);
       }
       uploadedFileCount++;
     }
