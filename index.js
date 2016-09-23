@@ -126,8 +126,8 @@ blok.upload = function (filepath, file, done) {
       var keyParts = key.split('.');
       var lastPart = keyParts[keyParts.length - 1];
 
-      if (['js', 'css', 'svg'].indexOf(lastPart) > -1) {
-          gutil.log(gutil.colors.green('Found js/css/svg'));
+      if (['js', 'css', 'svg', 'json'].indexOf(lastPart) > -1) {
+          gutil.log(gutil.colors.green('Found js/css/svg/json'));
           props.type = 'asset';
       }
   }
