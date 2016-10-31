@@ -1,6 +1,6 @@
 {
   "name": "gulp-blok",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Tool to publish blok templates and assets",
   "main": "index.js",
   "scripts": {

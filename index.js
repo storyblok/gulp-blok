@@ -109,14 +109,12 @@ blok.upload = function (filepath, file, done) {
 
   queue.push(filepath);
 
-  var key = blok._makeAssetKey(filepath, 'dist'),
-      isBinary = isBinaryFile(filepath),
-      props = {
-          filepath: key
-      },
-      contents;
-
-  contents = file.contents;
+  var key = blok._makeAssetKey(filepath, 'dist');
+  var isBinary = isBinaryFile(filepath);
+  var props = {
+    filepath: key
+  };
+  var contents = file.contents;
 
   if (isBinary) {
       props.attachment = contents.toString('base64');
@@ -154,7 +152,7 @@ blok.upload = function (filepath, file, done) {
 function gulpBlokUpload(options) {
 
   // queue files provided in the stream for deployment
-  var apiBurstBucketSize = 40;
+  var apiBurstBucketSize = 10;
   var uploadedFileCount = 0;
   var stream;
   var uploadDone = function() {};
@@ -190,7 +188,9 @@ function gulpBlokUpload(options) {
       } else {
         // Delay deployment based on position in the array to deploy 2 files per second
         // after hitting the initial burst bucket limit size
-        setTimeout(blok.upload.bind(file.path, file), ((uploadedFileCount - apiBurstBucketSize) / 2) * 1000, uploadDone);
+        setTimeout(function() {
+          blok.upload(file.path, file, uploadDone);
+        }, ((uploadedFileCount - apiBurstBucketSize) / 2) * 1000);
       }
       uploadedFileCount++;
     }
