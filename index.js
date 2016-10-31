@@ -138,10 +138,11 @@ blok.upload = function (filepath, file, done) {
         gutil.log(gutil.colors.red('Error uploading file ' + JSON.stringify(res.body)));
       } else if (!res.error) {
         gutil.log(gutil.colors.green('File "' + key + '" uploaded.'));
-        done();
       }
+
+      done();
   }
-  
+
   gutil.log(gutil.colors.green('[gulp-blok] - Starts upload of ' + key));
   blok._apiCall('PUT', props, onUpdate);
 };
@@ -155,7 +156,11 @@ function gulpBlokUpload(options) {
   var apiBurstBucketSize = 10;
   var uploadedFileCount = 0;
   var stream;
-  var uploadDone = function() {};
+  var uploadDoneCb = function() {};
+  var uploadDone = function() {
+    uploadedFileCount--;
+    uploadDoneCb();
+  };
 
   blok._setOptions(options);
 
@@ -171,7 +176,7 @@ function gulpBlokUpload(options) {
     throw new PluginError(PLUGIN_NAME, 'Error, themeId for blok does not exist!');
   }
   if (options.hasOwnProperty('uploadDone')) {
-    uploadDone = options['uploadDone'];
+    uploadDoneCb = options['uploadDone'];
   }
 
   // creating a stream through which each file will pass
