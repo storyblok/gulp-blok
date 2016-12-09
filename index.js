@@ -14,7 +14,7 @@ blok._api = false;
 blok._basePath = false;
 
 blok._apiCall = function(method, props, callback) {
-  var req = unirest(method, 'http://' + config.options.url + '/api-v1/theme/' + config.options.themeId);
+  var req = unirest(method, 'https://' + config.options.url + '/api-v1/theme/' + config.options.themeId);
 
   req.headers({
     'x-api-key': config.options.apiKey
