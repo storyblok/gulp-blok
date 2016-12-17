@@ -132,18 +132,22 @@ blok.upload = function (filepath, file, done) {
 
   if (isBinary) {
     props.attachment = contents.toString('base64');
-    props.type = 'binary_asset';
+    props.tmpl_type = 'binary_asset';
   } else {
     props.body = contents.toString();
+    props.tmpl_type = 'text';
 
     var keyParts = key.split('.');
     var lastPart = keyParts[keyParts.length - 1];
 
     if (['js', 'css', 'svg', 'json'].indexOf(lastPart) > -1) {
       gutil.log(gutil.colors.green('Found js/css/svg/json'));
-      props.type = 'asset';
+      props.tmpl_type = 'asset';
     }
   }
+
+  // For backwards compability copy value to type
+  props.type = props.tmpl_type
 
   function onUpdate(res) {
     var index = queue.indexOf(filepath);
