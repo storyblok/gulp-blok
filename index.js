@@ -1,27 +1,37 @@
-var through = require('through2'),
-  gutil = require('gulp-util'),
-  path = require('path'),
-  isBinaryFile = require('isbinaryfile'),
-  unirest = require('unirest'),
-  PluginError = gutil.PluginError,
-  blok = {},
-  config = {},
-  PLUGIN_NAME = 'gulp-blok'
-  queue = [];
+var through = require('through2');
+var gutil = require('gulp-util');
+var path = require('path');
+var isBinaryFile = require('isbinaryfile');
+var unirest = require('unirest');
+var PluginError = gutil.PluginError;
+var blok = {};
+var config = {};
+var PLUGIN_NAME = 'gulp-blok';
+var queue = [];
 
 // Set up blok API information
 blok._api = false;
 blok._basePath = false;
 
 blok._apiCall = function(method, props, callback) {
-  var req = unirest(method, 'https://' + config.options.url + '/api-v1/theme/' + config.options.themeId);
+  var params = {}
 
-  req.headers({
-    'x-api-key': config.options.apiKey
-  });
+  if (config.options.apiVersion > 1) {
+    var req = unirest(method, 'https://api.storyblok.com/v1/spaces/' + config.options.themeId + '/templates/create_or_update');
+
+    params.template = props
+    params.token = config.options.apiKey
+  } else {
+    var req = unirest(method, 'https://' + config.options.url + '/api-v1/theme/' + config.options.themeId);
+    var params = props
+
+    req.headers({
+      'x-api-key': config.options.apiKey
+    });
+  }
 
   req.type('json');
-  req.send(props);
+  req.send(params);
   req.end(callback);
 }
 
@@ -109,38 +119,43 @@ blok.upload = function (filepath, file, done) {
 
   queue.push(filepath);
 
-  var key = blok._makeAssetKey(filepath, 'dist');
+  var key = blok._makeAssetKey(filepath, config.options.basePath || 'dist');
   var isBinary = isBinaryFile(filepath);
-  var props = {
-    filepath: key
-  };
+  var props = {};
   var contents = file.contents;
 
-  if (isBinary) {
-      props.attachment = contents.toString('base64');
+  if (config.options.apiVersion > 1) {
+    props.path = key
   } else {
-      props.body = contents.toString();
+    props.filepath = key
+  }
 
-      var keyParts = key.split('.');
-      var lastPart = keyParts[keyParts.length - 1];
+  if (isBinary) {
+    props.attachment = contents.toString('base64');
+    props.type = 'binary_asset';
+  } else {
+    props.body = contents.toString();
 
-      if (['js', 'css', 'svg', 'json'].indexOf(lastPart) > -1) {
-          gutil.log(gutil.colors.green('Found js/css/svg/json'));
-          props.type = 'asset';
-      }
+    var keyParts = key.split('.');
+    var lastPart = keyParts[keyParts.length - 1];
+
+    if (['js', 'css', 'svg', 'json'].indexOf(lastPart) > -1) {
+      gutil.log(gutil.colors.green('Found js/css/svg/json'));
+      props.type = 'asset';
+    }
   }
 
   function onUpdate(res) {
-      var index = queue.indexOf(filepath);
-      queue.splice(index, 1);
+    var index = queue.indexOf(filepath);
+    queue.splice(index, 1);
 
-      if (res.error) {
-        gutil.log(gutil.colors.red('Error uploading file ' + JSON.stringify(res.body)));
-      } else if (!res.error) {
-        gutil.log(gutil.colors.green('File "' + key + '" uploaded.'));
-      }
+    if (res.error) {
+      gutil.log(gutil.colors.red('Error uploading file ' + JSON.stringify(res.error) + (res.body ? JSON.stringify(res.body) : '') ));
+    } else if (!res.error) {
+      gutil.log(gutil.colors.green('File "' + key + '" uploaded.'));
+    }
 
-      done();
+    done();
   }
 
   gutil.log(gutil.colors.green('[gulp-blok] - Starts upload of ' + key));
@@ -169,12 +184,21 @@ function gulpBlokUpload(options) {
   if (!options.hasOwnProperty('apiKey')) {
     throw new PluginError(PLUGIN_NAME, 'Error, API Key for blok does not exist!');
   }
-  if (!options.hasOwnProperty('url')) {
-    throw new PluginError(PLUGIN_NAME, 'Error, url for blok does not exist!');
+
+  if (!options.hasOwnProperty('apiVersion')) {
+    options.apiVersion = 1
   }
+
+  if (options.apiVersion != 2) {
+    if (!options.hasOwnProperty('url')) {
+      throw new PluginError(PLUGIN_NAME, 'Error, url for blok does not exist!');
+    }
+  }
+
   if (!options.hasOwnProperty('themeId')) {
     throw new PluginError(PLUGIN_NAME, 'Error, themeId for blok does not exist!');
   }
+
   if (options.hasOwnProperty('uploadDone')) {
     uploadDoneCb = options['uploadDone'];
   }
