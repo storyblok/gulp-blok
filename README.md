@@ -14,7 +14,7 @@ var blok = require('gulp-blok')
 var watch = require('gulp-watch')
 var config = {
   apiVersion: 2,
-  themeId: 'YOUR_THEME_ID',
+  themeId: 'YOUR_SPACE_ID',
   domain: 'YOURSUBDOMAIN.me.storyblok.com',
   apiKey: 'YOUR_TOKEN',
   basePath: 'views',
