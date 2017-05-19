@@ -149,6 +149,10 @@ blok.upload = function (filepath, file, done) {
   // For backwards compability copy value to type
   props.type = props.tmpl_type
 
+  if (typeof config.options.environment != 'undefined') {
+    props.env = config.options.environment
+  }
+
   function onUpdate(res) {
     var index = queue.indexOf(filepath);
     queue.splice(index, 1);

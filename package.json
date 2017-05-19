@@ -1,7 +1,7 @@
 {
   "name": "gulp-blok",
-  "version": "1.1.1",
-  "description": "Tool to publish blok templates and assets",
+  "version": "1.1.2",
+  "description": "Tool to publish Storyblok templates and assets",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
