@@ -163,7 +163,7 @@ blok.upload = function (filepath, file, done) {
       gutil.log(gutil.colors.green('File "' + key + '" uploaded.'));
     }
 
-    done();
+    done({file: key});
   }
 
   gutil.log(gutil.colors.green('[gulp-blok] - Starts upload of ' + key));
@@ -180,9 +180,9 @@ function gulpBlokUpload(options) {
   var uploadedFileCount = 0;
   var stream;
   var uploadDoneCb = function() {};
-  var uploadDone = function() {
+  var uploadDone = function(file) {
     uploadedFileCount--;
-    uploadDoneCb();
+    uploadDoneCb(file);
   };
 
   blok._setOptions(options);

@@ -1,6 +1,6 @@
 {
   "name": "gulp-blok",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Tool to publish Storyblok templates and assets",
   "main": "index.js",
   "scripts": {
